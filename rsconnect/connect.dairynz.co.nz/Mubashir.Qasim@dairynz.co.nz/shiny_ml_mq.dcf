@@ -1,0 +1,13 @@
+name: shiny_ml_mq
+title: shiny_ml_mq
+username: Mubashir.Qasim@dairynz.co.nz
+account: Mubashir.Qasim@dairynz.co.nz
+server: connect.dairynz.co.nz
+hostUrl: https://connect.dairynz.co.nz/__api__
+appId: 44
+bundleId: 149
+url: https://connect.dairynz.co.nz/content/e0bde21a-95a5-4156-94a2-0a49cc89c282/
+when: 1648079959.81815
+lastSyncTime: 1648079959.81815
+asMultiple: FALSE
+asStatic: FALSE
