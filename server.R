@@ -15,13 +15,6 @@ server <- function(input, output,session) {
     return(holder)
   })
   
-  # rawdata <- reactive({
-  #   datasets[[input$dataset]]
-  # })
-  # 
-  # #observeEvent(input$fileIn, { rawdata <- read.csv(input$fileIn) })
-  
-  
   observe({
     updateSelectizeInput(session,'yvar',choices=names(rawdata()),selected = names(rawdata())[1])
   })
@@ -40,12 +33,12 @@ server <- function(input, output,session) {
   
   makeReactiveBinding('modelType')
   
-  observeEvent(modelType,{
+  observeEvent(modelType, {
     
     if(modelType=='Regression'){
-      updateSelectizeInput(session,'slt_algo',choices = reg.mdls,selected = reg.mdls)
+      updateSelectizeInput(session,'slt_algo', choices = reg.mdls, selected = reg.mdls)
     } else {
-      updateSelectizeInput(session,'slt_algo',choices = cls.mdls,selected = cls.mdls)
+      updateSelectizeInput(session,'slt_algo', choices = cls.mdls, selected = cls.mdls)
       
     }
   })
@@ -171,9 +164,10 @@ server <- function(input, output,session) {
     getRes <- function(i){
       name <- names(fits)[i]
       res <- fits[[i]]$results
-      df <- res[(ncol(res)-4):ncol(res)]
-      apply(res,1,function(r) paste(r[1:(ncol(res)-4)],collapse = '-')) %>% 
-        paste(name,.,sep='-') -> model
+      df <- res[,-1]
+      #model <- paste(name, res$C, round(res$RMSE,5), sep = "-")
+      model <- apply(res,1,function(r) paste(r[1:(ncol(res)-4)],collapse = '-')) %>% 
+        paste(name,.,sep='-')
       cbind.data.frame(model,df,name=name[[1]],stringsAsFactors =F)
     }
     
@@ -184,7 +178,7 @@ server <- function(input, output,session) {
     } else {
       df$rank <- rank(rank(1-df$Accuracy)+rank(1-df$Kappa),ties.method = 'first')
     }
-    df[2:6] <- round(df[2:6],3)
+    df[2:5] <- round(df[2:5],3)
     df[order(df$rank),]
     
   })
@@ -215,13 +209,12 @@ server <- function(input, output,session) {
   })
   
   topModels <- reactive({
-    if(is.null(CVres()))
-      return()
+    if(is.null(CVres())) {return() }
+    else {
     CVres() %>% group_by(name) %>% filter(rank==min(rank)) -> df
-    # 
     lst <- df$name[order(df$rank)]
     names(lst) <- df$model[order(df$rank)]
-    lst
+    lst }
   }) 
   
   observe({
@@ -295,12 +288,12 @@ server <- function(input, output,session) {
   
   output$testsetPlot <- renderPlot({
     
-    df <- data.frame(obs=dataTest$y,pred=testPreds()$c)
+    df <- data.frame(obs=dataTest$y, pred=testPreds()$c)
     
     col <- pal[topModels()[[1]]]
     
     if(isolate(modelType)=='Regression'){
-      lims <- c(min(df$obs),max(df$obs))
+      lims <- c(min(df$obs), max(df$obs))
       ggplot(df)+
         geom_abline(alpha=0.5)+
         geom_point(aes(x=obs,y=pred),color=col,size=2)+
@@ -327,9 +320,7 @@ server <- function(input, output,session) {
         xlab('Observed')+
         ylab('Predicted')+
         theme(legend.position='none')
-      
     }
-    
   })
   
   output$testsetS1 <- renderValueBox({
@@ -399,7 +390,7 @@ server <- function(input, output,session) {
     resdf <- CVres()
     type <- isolate(modelType)
     
-    resdf$model <- factor(resdf$model,levels = rev(resdf$model[resdf$rank]))
+    resdf$model <- factor(resdf$model, levels = rev(resdf$model[resdf$rank]))
     
     if(type=='Regression'){
       ggplot(resdf,aes(x=model,color=name))+

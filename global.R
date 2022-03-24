@@ -81,7 +81,7 @@ mdli <- list(
 reg.mdls <- mdls[mdli[['Regression']]]
 cls.mdls <- mdls[mdli[['Classification']]]
 
-# 
+#  Color spectrum
 pal <- c('#b2df8a','#33a02c','#ff7f00','#cab2d6','#b15928',
          '#fdbf6f','#a6cee3','#fb9a99','#1f78b4','#e31a1c')
 

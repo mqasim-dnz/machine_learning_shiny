@@ -1,9 +1,4 @@
 ## Initialization ---------------------------------------------------------
-
-library(shiny)
-require(shinyBS)
-require(shinydashboard)
-require(shinyjs)
 require(caret)
 require(plyr)
 require(dplyr)
@@ -36,25 +31,6 @@ require(MLmetrics)
 require(Cubist)
 require(testthat)
 
-data(meuse)
-
-dmnds <- diamonds#[sample(1:nrow(diamonds),1e3),]
-
-# leaf <- read.csv('/Users/davesteps/Desktop/kaggle_data/leaf/train.csv')
-
-datasets <- list(
-  'iris'=iris,
-  'cars'=mtcars,
-  'meuse'=meuse,
-  'diamonds'=data.frame(dmnds),
-  'Boston'=Boston
-  # 'leaf'=leaf
-  # 'midwest'=data.frame(midwest),
-  # 'mpg'=data.frame(mpg),
-  # 'msleep'=data.frame(msleep),
-  # 'txhousing'=data.frame(txhousing)
-)
-
 tuneParams <- list(
   'svmLinear'=data.frame(C=c(0.01,0.1,1)),
   'svmPoly'= expand.grid(degree=1:3,scale=c(0.01,0.1),C=c(0.25,0.5,1)),
@@ -84,41 +60,43 @@ mdli <- list(
 reg.mdls <- mdls[mdli[['Regression']]]
 cls.mdls <- mdls[mdli[['Classification']]]
 
-# Modelling -------------------------------------------------------------------
+#  Color spectrum
+pal <- c('#b2df8a','#33a02c','#ff7f00','#cab2d6','#b15928',
+         '#fdbf6f','#a6cee3','#fb9a99','#1f78b4','#e31a1c')
 
-CVtune <- readRDS('initState.Rdata')
-makeReactiveBinding('CVtune')
+set.seed(3)
+pal <- sample(pal,length(mdls),F)
+
+# Modelling ---------------------------------------------------------------
 
 rawdata <- iris
 
 # Model inputs
-yvar <- "Species"
-xvars <- c("Sepal.Length","Sepal.Width","Petal.Length","Petal.Width")
-testsize <- 30
+yvar <- "Sepal.Length"
+xvars <- c("Sepal.Width","Petal.Length","Petal.Width")
+testsize <- 20
+
+chk_logY <- FALSE # Is log applied to Y
 
 dataTrain <- NULL
 dataTest <- NULL
 
-makeReactiveBinding('dataTrain')
-makeReactiveBinding('dataTest')
 modelType <- 'Regression'
-makeReactiveBinding('modelType')
+mdls <- reg.mdls
 
 # extract y and X from raw data
-y <- isolate(rawdata[,yvar])
-X <-  isolate(rawdata[,xvars])
+y <- rawdata[,yvar]
+X <-  rawdata[,xvars]
 
 # deal with NA values
 yi <- !is.na(y)
 Xi <- complete.cases(X)
-
 df2 <- cbind(y,X)[yi&Xi,]
-
 c <- class(df2$y)
 
 lvls <- length(unique(df2$y))
 
-if(lvls<10|(c!='numeric'&c!='integer')){
+if(lvls < 10|(c!='numeric'&c!='integer')){
   modelType <-'Classification'
   df2$y <- factor(df2$y)
 } else {
@@ -169,18 +147,18 @@ trainArgs <- list(
              method = 'knn',
              trControl = fitControl,
              tuneGrid=tuneParams[['knn']]),
-  'nb'=list(form=y ~ .,
-            data = dataTrain,
-            preProcess = c('scale','center'),
-            method = 'nb',
-            trControl = fitControl,
-            tuneGrid=tuneParams[['nb']]),
   'glm'=list(form=y ~ .,
              data = dataTrain,
              preProcess = c('scale','center'),
              method = 'glm',
              trControl = fitControl,
              tuneGrid=NULL),
+  'nb'=list(form=y ~ .,
+            data = dataTrain,
+            preProcess = c('scale','center'),
+            method = 'nb',
+            trControl = fitControl,
+            tuneGrid=tuneParams[['nb']]),
   'gam'=list(form=y ~ .,
              data = dataTrain,
              preProcess = c('scale','center'),
@@ -188,9 +166,60 @@ trainArgs <- list(
              trControl = fitControl)
 )
 
-tune <- lapply(mdls,function(m){
-  do.call('train',trainArgs[[m]])
+tune <- lapply(mdls, function(m){
+  do.call('train', trainArgs[[m]])
 })
 
+names(tune) <- mdls
+CVtune <- tune
 
+fits <- CVtune
+
+getRes <- function(i){
+  name <- names(fits)[i]
+  res <- fits[[i]]$results
+  df <- res[,-1]
+  #model <- paste(name, res$C, round(res$RMSE,5), sep = "-")
+  model <- apply(res,1,function(r) paste(r[1:(ncol(res)-4)],collapse = '-')) %>% 
+    paste(name,.,sep='-')
+  cbind.data.frame(model,df,name=name[[1]],stringsAsFactors =F)
+}
+
+df <- plyr::ldply(1:length(fits),getRes)
+
+if(modelType=='Regression'){
+  df$rank <- rank(rank(df$RMSE)+rank(1-df$Rsquared),ties.method = 'first')
+} else {
+  df$rank <- rank(rank(1-df$Accuracy)+rank(1-df$Kappa),ties.method = 'first')
+}
+df[2:5] <- round(df[2:5],3)
+
+CVres <- df[order(df$rank),]
+
+# Plots for regression models ---------------------------------------------
+
+resdf <- CVres
+type <- modelType
+
+resdf$model <- factor(resdf$model, levels = rev(resdf$model[resdf$rank]))
+
+ggplot(resdf, aes(x=model,color=name))+
+  geom_errorbar(aes(ymin = RMSE - RMSESD, ymax = RMSE + RMSESD), size=1)+
+  geom_point(aes(y=RMSE),size=3)+
+  scale_color_manual(values=pal)+
+  coord_flip()+
+  theme_bw()+
+  xlab('')+
+  theme(legend.position='none') -> p1
+
+ggplot(resdf,aes(x=model,color=name))+
+  geom_errorbar(aes(ymin = Rsquared - RsquaredSD, ymax = Rsquared + RsquaredSD), size=1)+
+  geom_point(aes(y=Rsquared),size=3)+
+  scale_color_manual(values=pal)+
+  coord_flip()+
+  theme_bw()+
+  xlab('')+
+  theme(legend.position='none') -> p2
+
+gridExtra::grid.arrange(p2,p1,ncol=2)
 

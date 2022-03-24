@@ -5,7 +5,7 @@ ui <- bootstrapPage(useShinyjs(),
                     tagList(tags$head(
                       tags$link(rel="stylesheet", type="text/css",href="style.css"),
                       tags$script(type="text/javascript", src = "busy.js"),
-                      lapply(1:length(mdls),function(i) modelCSS(mdls[i],pal[i]))
+                      lapply(1:length(mdls), function(i) modelCSS(mdls[i],pal[i]))
                       
                     )),
                     
@@ -46,7 +46,10 @@ ui <- bootstrapPage(useShinyjs(),
                           a(icon('github'),href='https://github.com/davesteps/machLearn',target='_blank')
                         )                  
                       ),
+                      
                       dashboardBody(
+                        
+                        # Tab: Step 1
                         tabItems(
                           tabItem("setup",
                                   box(width = 4,title = 'Input Dataset',solidHeader = T,status = 'primary',
@@ -83,23 +86,21 @@ ui <- bootstrapPage(useShinyjs(),
                                   bsModal('data',title = 'Dataset',trigger = 'btn_viewData',size = 'large',
                                           dataTableOutput('rawdata')
                                   )
-                          ),
+                          ), # End of Tab
+                          
+                          # Tab: Step 2
                           tabItem("model",
-                                  # bsModal('mdl_tune','Tuning Options',trigger = 'btn_tune',
-                                  
-                                  # ),
                                   column(width=3,
                                          box(width = 12,title = 'Model Options',solidHeader = T,status = 'primary',
-                                             selectInput('slt_algo',label = 'Algorithm:'%>%label.help('lbl_algo'),
-                                                         choices = reg.mdls,selected = reg.mdls,multiple=T),
+                                             
+                                             selectInput('slt_algo', label = 'Algorithm:' %>% label.help('lbl_algo'),
+                                                         choices = reg.mdls, selected = reg.mdls, multiple=T),
+                                             
                                              selectizeInput('slt_Tune','Parameter Tuning'%>%label.help('lbl_Tune'),
                                                             choices = c('Coarse auto-tune (fast)','Fine auto-tune (slow)','manual')),
-                                             # actionButton('btn_tune',label = 'Tuning Options',icon = icon('sliders')
-                                             # ),
-                                             # p(),
                                              
-                                             radioButtons('rdo_CVtype',label = 'Cross-validation folds'%>%label.help('lbl_CV'),
-                                                          choices = c('3-fold'=3,'5-fold'=5,'10-fold'=10),inline = T),
+                                             radioButtons('rdo_CVtype', label = 'Cross-validation folds' %>% label.help('lbl_CV'),
+                                                          choices = c('3-fold'=3,'5-fold'=5,'10-fold'=10), inline = T),
                                              
                                              actionButton('btn_train',label = 'Train Models',
                                                           icon = icon('cogs'),#'bullseye','rocket'
@@ -113,7 +114,8 @@ ui <- bootstrapPage(useShinyjs(),
                                                        placement = "right", trigger = "hover")
                                              
                                          ),
-                                         box(width = 12,title = 'Summary',solidHeader = F,
+                                         
+                                         box(width = 12,title = 'Summary', solidHeader = F,
                                              status = 'primary',
                                              helpText(textOutput('txt_bestModel')),
                                              helpText(textOutput('txt_bestModelStat1')),
@@ -124,8 +126,8 @@ ui <- bootstrapPage(useShinyjs(),
                                              helpText(textOutput('txt_nModels'))
                                              
                                          )
-                                  )
-                                  ,
+                                  ), 
+                                  
                                   tabBox(width = 9,
                                          tabPanel(title = 'CV Model Rank',#icon = icon('sort-amount-asc'),
                                                   h4('Cross-validation results'),
@@ -139,19 +141,20 @@ ui <- bootstrapPage(useShinyjs(),
                                                   h4('Performance statiscs from cross-validation'),
                                                   
                                                   dataTableOutput('model_info')
+                                         ),
+                                         tabPanel(title = 'CV Sig testing',
+                                                  h4('Statisical significance of cross-validation results'),
+                                                  helpText('Perform permutation test of error statisic to determine
+                                                           whether the score of the best model was significantly higher
+                                                           than the other candidates.'),
+                                                  actionButton('btn_sigTest',label = 'Perform permutation test'),
+                                                  tableOutput('sgTable')
+
                                          )
-                                         # tabPanel(title = 'CV Sig testing',
-                                         #          h4('Statisical significance of cross-validation results'),
-                                         #          helpText('Perform permutation test of error statisic to determine
-                                         #                   whether the score of the best model was significantly higher
-                                         #                   than the other candidates.'),
-                                         #          actionButton('btn_sigTest',label = 'Perform permutation test'),
-                                         #          tableOutput('sgTable')
-                                         #          
-                                         #          
-                                         # )
                                   )
-                          ),
+                          ), # End of Tab
+                          
+                          # Tab: Step 3
                           tabItem("test",
                                   column(width=3,
                                          box(width = 12,title = 'Test Set Predictions',solidHeader = F,status = 'primary',
