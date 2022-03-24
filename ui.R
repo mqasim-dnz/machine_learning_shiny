@@ -59,7 +59,7 @@ ui <- bootstrapPage(useShinyjs(),
                                       actionButton('btn_viewData',label = 'View Data',icon=icon('table')),
                                       hr(),
                                       
-                                      sliderInput('sld_testsplit',label = label.help('Test set %','lbl_testsplit'),min = 33,max = 90,step = 1,value = 33),
+                                      sliderInput('sld_testsplit',label = label.help('Test set %','lbl_testsplit'), min = 10, max = 90, step = 1, value = 30),
                                       bsTooltip(id = "lbl_testsplit", title = "% of data to set aside for test data", 
                                                 placement = "right", trigger = "hover")
                                       
