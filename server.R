@@ -166,7 +166,7 @@ server <- function(input, output,session) {
       res <- fits[[i]]$results
       df <- res[,-1]
       #model <- paste(name, res$C, round(res$RMSE,5), sep = "-")
-      model <- apply(res,1,function(r) paste(r[1:(ncol(res)-4)],collapse = '-')) %>% 
+      model <- apply(res,1,function(r) paste(r[1], collapse = '-')) %>% 
         paste(name,.,sep='-')
       cbind.data.frame(model,df,name=name[[1]],stringsAsFactors =F)
     }
@@ -178,8 +178,12 @@ server <- function(input, output,session) {
     } else {
       df$rank <- rank(rank(1-df$Accuracy)+rank(1-df$Kappa),ties.method = 'first')
     }
+    
     df[2:5] <- round(df[2:5],3)
     df[order(df$rank),]
+    df$model <- paste(df$rank,df$model,sep="-")
+    
+    return(df)
     
   })
   

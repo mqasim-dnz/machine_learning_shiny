@@ -180,21 +180,25 @@ getRes <- function(i){
   res <- fits[[i]]$results
   df <- res[,-1]
   #model <- paste(name, res$C, round(res$RMSE,5), sep = "-")
-  model <- apply(res,1,function(r) paste(r[1:(ncol(res)-4)],collapse = '-')) %>% 
+  model <- apply(res,1,function(r) paste(r[1],collapse = '-')) %>% 
     paste(name,.,sep='-')
   cbind.data.frame(model,df,name=name[[1]],stringsAsFactors =F)
 }
 
-df <- plyr::ldply(1:length(fits),getRes)
+df <- plyr::ldply(1:length(fits), getRes)
 
 if(modelType=='Regression'){
   df$rank <- rank(rank(df$RMSE)+rank(1-df$Rsquared),ties.method = 'first')
 } else {
   df$rank <- rank(rank(1-df$Accuracy)+rank(1-df$Kappa),ties.method = 'first')
 }
+
 df[2:5] <- round(df[2:5],3)
 
-CVres <- df[order(df$rank),]
+df <- df[order(df$rank),]
+df$model <- paste(df$rank,df$model,sep="-")
+
+CVres <- df
 
 # Plots for regression models ---------------------------------------------
 
